@@ -13,7 +13,7 @@ import (
 )
 
 func TestThreadID(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestThreadID(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestSubjectUTF8(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestSubjectUTF8(t *testing.T) {
 }
 
 func TestTopLevelMessages(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestTopLevelMessages(t *testing.T) {
 }
 
 func TestMessages(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestAuthors(t *testing.T) {
 		},
 	}
 
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestAuthors(t *testing.T) {
 }
 
 func TestOldestDate(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestOldestDate(t *testing.T) {
 }
 
 func TestNewestDate(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +221,7 @@ func TestNewestDate(t *testing.T) {
 }
 
 func TestThreadTags(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}

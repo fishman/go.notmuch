@@ -14,7 +14,7 @@ import (
 // before the child object. This is inevitable if Close is used at all; the
 // GC will close things child-first.
 func TestOutOfOrderClose(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}

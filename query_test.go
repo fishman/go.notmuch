@@ -10,7 +10,7 @@ import (
 )
 
 func TestSearchThreads(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestSearchThreads(t *testing.T) {
 }
 
 func TestSearchMessages(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestSearchMessages(t *testing.T) {
 }
 
 func TestGetNoResult(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestGetNoResult(t *testing.T) {
 }
 
 func TestQueryCountMessages(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestQueryCountMessages(t *testing.T) {
 }
 
 func TestQueryCountThreads(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestQueryCountThreads(t *testing.T) {
 }
 
 func TestSetSortScheme(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestSetSortScheme(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestString(t *testing.T) {
 }
 
 func TestSetExcludeScheme(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestSetExcludeScheme(t *testing.T) {
 }
 
 func TestAddTagExclude(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 func TestMessagesTags(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}

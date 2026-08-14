@@ -62,8 +62,44 @@ var (
 
 	// ErrPathError is returned when there is a problem with the proposed path,
 	// e.g. a relative path passed to a function expecting an absolute path.
-	// TODO(kalbasit): this is currently on master. uncomment when released.
-	// ErrPathError = statusErr(C.NOTMUCH_STATUS_PATH_ERROR)
+	ErrPathError = statusErr(C.NOTMUCH_STATUS_PATH_ERROR)
+
+	// ErrIllegalArgument is returned when the argument is illegal.
+	ErrIllegalArgument = statusErr(C.NOTMUCH_STATUS_ILLEGAL_ARGUMENT)
+
+	// ErrMalformedCryptoProtocol is returned when the crypto protocol is malformed.
+	ErrMalformedCryptoProtocol = statusErr(C.NOTMUCH_STATUS_MALFORMED_CRYPTO_PROTOCOL)
+
+	// ErrFailedCryptoContextCreation is returned when a crypto context could not be created.
+	ErrFailedCryptoContextCreation = statusErr(C.NOTMUCH_STATUS_FAILED_CRYPTO_CONTEXT_CREATION)
+
+	// ErrUnknownCryptoProtocol is returned when the crypto protocol is unknown.
+	ErrUnknownCryptoProtocol = statusErr(C.NOTMUCH_STATUS_UNKNOWN_CRYPTO_PROTOCOL)
+
+	// ErrNoConfig is returned when no config file was found.
+	ErrNoConfig = statusErr(C.NOTMUCH_STATUS_NO_CONFIG)
+
+	// ErrNoDatabase is returned when there is no database information in the config.
+	ErrNoDatabase = statusErr(C.NOTMUCH_STATUS_NO_DATABASE)
+
+	// ErrDatabaseExists is returned when the database already exists and was not created.
+	ErrDatabaseExists = statusErr(C.NOTMUCH_STATUS_DATABASE_EXISTS)
+
+	// ErrBadQuerySyntax is returned when the query syntax is invalid.
+	ErrBadQuerySyntax = statusErr(C.NOTMUCH_STATUS_BAD_QUERY_SYNTAX)
+
+	// ErrNoMailRoot is returned when no mail root is configured.
+	ErrNoMailRoot = statusErr(C.NOTMUCH_STATUS_NO_MAIL_ROOT)
+
+	// ErrClosedDatabase is returned when an operation is attempted on a closed database.
+	ErrClosedDatabase = statusErr(C.NOTMUCH_STATUS_CLOSED_DATABASE)
+
+	// ErrIteratorExhausted is returned when an iterator is exhausted.
+	ErrIteratorExhausted = statusErr(C.NOTMUCH_STATUS_ITERATOR_EXHAUSTED)
+
+	// ErrOperationInvalidated is returned when an operation was invalidated, e.g.
+	// by closing the database while iterating.
+	ErrOperationInvalidated = statusErr(C.NOTMUCH_STATUS_OPERATION_INVALIDATED)
 
 	// ErrNotFound is returned when Find* did not find the thread/message by id or filename.
 	ErrNotFound = errors.New("not found")

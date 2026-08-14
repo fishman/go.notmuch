@@ -32,6 +32,18 @@ func (m *Message) ID() string {
 	return C.GoString(C.notmuch_message_get_message_id(m.toC()))
 }
 
+// Matched returns whether this message was matched by the query that
+// produced it. When a thread is created from a search, some of its
+// messages may not match the original query.
+func (m *Message) Matched() bool {
+	var cflag C.notmuch_bool_t
+	err := statusErr(C.notmuch_message_get_flag_st(m.toC(), C.NOTMUCH_MESSAGE_FLAG_MATCH, &cflag))
+	if err != nil {
+		return false
+	}
+	return int(cflag) != 0
+}
+
 // ThreadID returns the ID of the thread to which this message belongs to.
 func (m *Message) ThreadID() string {
 	return C.GoString(C.notmuch_message_get_thread_id(m.toC()))
@@ -175,13 +187,13 @@ func (m *Message) Atomic(callback func(*Message)) error {
 // flags, and adds or removes tags on 'message' as follows when these
 // flags are present:
 //
-//      Flag    Action if present
-//      ----    -----------------
-//      'D'     Adds the "draft" tag to the message
-//      'F'     Adds the "flagged" tag to the message
-//      'P'     Adds the "passed" tag to the message
-//      'R'     Adds the "replied" tag to the message
-//      'S'     Removes the "unread" tag from the message
+//	Flag    Action if present
+//	----    -----------------
+//	'D'     Adds the "draft" tag to the message
+//	'F'     Adds the "flagged" tag to the message
+//	'P'     Adds the "passed" tag to the message
+//	'R'     Adds the "replied" tag to the message
+//	'S'     Removes the "unread" tag from the message
 //
 // For each flag that is not present, the opposite action (add/remove)
 // is performed for the corresponding tags.
@@ -215,11 +227,11 @@ func (m *Message) MaildirFlagsToTags() error {
 // its filename ends with the sequence ":2," followed by zero or more
 // of the following single-character flags (in ASCII order):
 //
-//   * flag 'D' if the message has the "draft" tag
-//   * flag 'F' if the message has the "flagged" tag
-//   * flag 'P' if the message has the "passed" tag
-//   * flag 'R' if the message has the "replied" tag
-//   * flag 'S' if the message does not have the "unread" tag
+//   - flag 'D' if the message has the "draft" tag
+//   - flag 'F' if the message has the "flagged" tag
+//   - flag 'P' if the message has the "passed" tag
+//   - flag 'R' if the message has the "replied" tag
+//   - flag 'S' if the message does not have the "unread" tag
 //
 // Any existing flags unmentioned in the list above will be preserved
 // in the renaming.

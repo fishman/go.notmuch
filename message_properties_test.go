@@ -5,7 +5,7 @@ import (
 )
 
 func TestMessagesProperties(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatal(err)
 	}

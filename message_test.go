@@ -9,7 +9,7 @@ import (
 )
 
 func TestMessageID(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestMessageID(t *testing.T) {
 }
 
 func TestMessageThreadID(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestMessageThreadID(t *testing.T) {
 }
 
 func TestMessageReplies(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestMessageReplies(t *testing.T) {
 }
 
 func TestMessageFilename(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestMessageFilename(t *testing.T) {
 }
 
 func TestMessageFilenames(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestMessageFilenames(t *testing.T) {
 }
 
 func TestMessageDate(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestMessageDate(t *testing.T) {
 }
 
 func TestMessageHeader(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestMessageHeader(t *testing.T) {
 }
 
 func TestMessageTags(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestMessageTags(t *testing.T) {
 }
 
 func TestMessageAddRemoveTagReadonlyDB(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func TestMessageAddRemoveTagReadonlyDB(t *testing.T) {
 }
 
 func TestMessageAddRemoveTag(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,7 +339,7 @@ func TestMessageAddRemoveTag(t *testing.T) {
 }
 
 func TestMessageAtomic(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -395,7 +395,7 @@ func TestMessageAtomic(t *testing.T) {
 }
 
 func TestMaildirFlagsToTags(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -417,7 +417,7 @@ func TestMaildirFlagsToTags(t *testing.T) {
 }
 
 func TestTagsToMaildirFlags(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatal(err)
 	}

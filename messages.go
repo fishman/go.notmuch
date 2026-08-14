@@ -69,6 +69,6 @@ func (ms *Messages) get() *Message {
 }
 
 func (ms *Messages) valid() bool {
-	cbool := C.notmuch_messages_valid(ms.toC())
-	return int(cbool) != 0
+	cstatus := C.notmuch_messages_status(ms.toC())
+	return int(cstatus) == int(C.NOTMUCH_STATUS_SUCCESS)
 }

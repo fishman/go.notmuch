@@ -24,8 +24,15 @@ func init() {
 	}
 }
 
+// openNoConfig opens a database without a config file. Open() itself now
+// searches for a config, which tests must not depend on.
+func openNoConfig(path string, mode DBMode) (*DB, error) {
+	config := ""
+	return OpenWithConfig(&path, &config, nil, mode)
+}
+
 func TestOpenNotFound(t *testing.T) {
-	_, err := Open("/not-found", DBReadOnly)
+	_, err := openNoConfig("/not-found", DBReadOnly)
 	if err == nil {
 		t.Errorf("Open(%q): expected error got nil", "/not-found")
 	}
@@ -48,7 +55,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -59,7 +66,7 @@ func TestOpen(t *testing.T) {
 }
 
 func TestLastStatus(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -71,7 +78,7 @@ func TestLastStatus(t *testing.T) {
 }
 
 func TestPath(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -82,7 +89,7 @@ func TestPath(t *testing.T) {
 }
 
 func TestNeedsUpgrade(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -93,7 +100,7 @@ func TestNeedsUpgrade(t *testing.T) {
 }
 
 func TestUpgrade(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -102,7 +109,7 @@ func TestUpgrade(t *testing.T) {
 		t.Errorf("db.Upgrade(): want error %q got %q", want, got)
 	}
 
-	db, err = Open(dbPath, DBReadWrite)
+	db, err = openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -137,7 +144,7 @@ func TestAddMessage(t *testing.T) {
 	}
 	defer os.Remove(nfp)
 
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -163,7 +170,7 @@ func testFindMessage(t *testing.T, db *DB, id string) {
 }
 
 func TestFindMessage(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -182,7 +189,7 @@ func TestCompact(t *testing.T) {
 		t.Fatalf("error compacting %q: %s", dbPath, err)
 	}
 
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -192,7 +199,7 @@ func TestCompact(t *testing.T) {
 }
 
 func TestFindMessageByFilename(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -212,7 +219,7 @@ func TestFindMessageByFilename(t *testing.T) {
 }
 
 func TestTags(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -224,7 +231,7 @@ func TestTags(t *testing.T) {
 }
 
 func TestGetConfigList(t *testing.T) {
-	db, err := Open(dbPath, DBReadOnly)
+	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -235,7 +242,7 @@ func TestGetConfigList(t *testing.T) {
 }
 
 func TestSetConfig(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -248,18 +255,18 @@ func TestSetConfig(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
 	defer db.Close()
-	if _, err := db.GetConfig("blah"); err != nil {
-		t.Errorf("db.GetConfig(\"blah\"): unexpected error %s", err)
+	if _, err := db.GetConfig("blah"); err != ErrNotFound {
+		t.Errorf("db.GetConfig(\"blah\"): expecting ErrNotFound got %s", err)
 	}
 }
 
 func TestConfigRoundtrip(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -279,7 +286,7 @@ func TestConfigRoundtrip(t *testing.T) {
 }
 
 func TestConfigListNext(t *testing.T) {
-	db, err := Open(dbPath, DBReadWrite)
+	db, err := openNoConfig(dbPath, DBReadWrite)
 	if err != nil {
 		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
 	}
@@ -295,17 +302,79 @@ func TestConfigListNext(t *testing.T) {
 	}
 	var resKey string
 	var resVal string
+	found := false
 	for cfgList.Next(&resKey, &resVal) {
-		break
+		if resKey == cfgKey {
+			found = true
+			if resVal != cfgVal {
+				t.Errorf("config value: expected %q, got %q", cfgVal, resVal)
+			}
+		}
 	}
-	if resKey != cfgKey {
-		t.Errorf("config key: expected %q, got %q", cfgKey, resKey)
-	}
-	if resVal != cfgVal {
-		t.Errorf("config value: expected %q, got %q", cfgVal, resVal)
+	if !found {
+		t.Errorf("config key %q not found in config pairs", cfgKey)
 	}
 	if cfgList.Next(&resKey, &resVal) {
 		t.Errorf("iteration did not stop after the end of the options")
+	}
+}
+
+func TestConfigListDefaults(t *testing.T) {
+	db, err := openNoConfig(dbPath, DBReadOnly)
+	if err != nil {
+		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
+	}
+	defer db.Close()
+	cfgList, err := db.GetConfigList("new.")
+	if err != nil {
+		t.Fatalf("db.GetConfigList(%q): unexpected error: %s", "new.", err)
+	}
+	var resKey string
+	var resVal string
+	count := 0
+	for cfgList.Next(&resKey, &resVal) {
+		count++
+	}
+	if count == 0 {
+		t.Errorf("expected config pairs for prefix %q, got none", "new.")
+	}
+}
+
+func TestOpenConfigSearch(t *testing.T) {
+	t.Setenv("NOTMUCH_CONFIG", "/nonexistent/config")
+	if _, err := Open(dbPath, DBReadOnly); err != ErrNoConfig {
+		t.Errorf("Open(%q): expecting ErrNoConfig got %s", dbPath, err)
+	}
+}
+
+func TestReopen(t *testing.T) {
+	db, err := openNoConfig(dbPath, DBReadOnly)
+	if err != nil {
+		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
+	}
+	defer db.Close()
+	if err := db.Reopen(DBReadWrite); err != nil {
+		t.Fatalf("db.Reopen(DBReadWrite): unexpected error: %s", err)
+	}
+	if err := db.SetConfig("search.exclude_tags", "spam"); err != nil {
+		t.Errorf("db.SetConfig after reopen: unexpected error %s", err)
+	}
+}
+
+func TestAtomicAbort(t *testing.T) {
+	db, err := openNoConfig(dbPath, DBReadWrite)
+	if err != nil {
+		t.Fatalf("Open(%q): unexpected error: %s", dbPath, err)
+	}
+	defer db.Close()
+	err = db.Atomic(func(db *DB) {
+		if err := db.SetConfig("atomic.abort", "spam"); err != nil {
+			t.Errorf("db.SetConfig: unexpected error %s", err)
+		}
+		db.Close()
+	})
+	if err != nil {
+		t.Errorf("db.Atomic with abort: unexpected error %s", err)
 	}
 }
 

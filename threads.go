@@ -48,6 +48,6 @@ func (ts *Threads) get() *Thread {
 }
 
 func (ts *Threads) valid() bool {
-	cbool := C.notmuch_threads_valid(ts.toC())
-	return int(cbool) != 0
+	cstatus := C.notmuch_threads_status(ts.toC())
+	return int(cstatus) == int(C.NOTMUCH_STATUS_SUCCESS)
 }
