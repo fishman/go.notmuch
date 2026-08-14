@@ -5,7 +5,6 @@ package notmuch
 // See COPYING at the root of the repository for details.
 
 import (
-	"io"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -94,8 +93,15 @@ func (c *cStruct) live() bool {
 }
 
 // Set a finalizer to invoke c.Close() when c is garbage collected.
-func setGcClose(c io.Closer) {
-	runtime.SetFinalizer(c, func(c io.Closer) {
+func setGcClose(c interface{ Close() }) {
+	runtime.SetFinalizer(c, func(c interface{ Close() }) {
+		c.Close()
+	})
+}
+
+// setGcCloseErr is setGcClose for types whose Close returns an error.
+func setGcCloseErr(c interface{ Close() error }) {
+	runtime.SetFinalizer(c, func(c interface{ Close() error }) {
 		c.Close()
 	})
 }

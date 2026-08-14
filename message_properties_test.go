@@ -17,10 +17,12 @@ func TestMessagesProperties(t *testing.T) {
 		t.Fatalf("error getting the messages: %s", err)
 	}
 
-	first := &Message{}
-	found := messages.Next(&first)
-	if !found {
-		t.Fatalf("couldn't get the first message: %s", err)
+	var first *Message
+	for first = range messages.All() {
+		break
+	}
+	if first == nil {
+		t.Fatal("couldn't get the first message")
 	}
 
 	if err := first.AddProperty("go-notmuch-test", "success"); err != nil {
@@ -28,9 +30,8 @@ func TestMessagesProperties(t *testing.T) {
 	}
 
 	properties := first.Properties("go-notmuch-test", true)
-	property := &MessageProperty{}
-	for properties.Next(&property) {
-		if property.Key == "go-notmuch-test" && property.Value == "success" {
+	for prop := range properties.All() {
+		if prop.Key == "go-notmuch-test" && prop.Value == "success" {
 			return
 		}
 	}

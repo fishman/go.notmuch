@@ -93,7 +93,7 @@ func CreateWithConfig(path, config, profile *string) (*DB, error) {
 		return nil, err
 	}
 	db := &DB{cptr: unsafe.Pointer(cdb)}
-	setGcClose(db)
+	setGcCloseErr(db)
 	return db, nil
 }
 
@@ -165,7 +165,7 @@ func OpenWithConfig(path, config, profile *string, mode DBMode) (*DB, error) {
 		return nil, err
 	}
 	db := &DB{cptr: unsafe.Pointer(cdb)}
-	setGcClose(db)
+	setGcCloseErr(db)
 	return db, nil
 }
 
@@ -212,10 +212,11 @@ func (db *DB) Reopen(mode DBMode) error {
 	return statusErr(C.notmuch_database_reopen(db.toC(), C.notmuch_database_mode_t(mode)))
 }
 
-// NewQuery creates a new query from a string following xapian format.
+// NewQuery creates a new query from a string following xapian format. On a
+// closed database it returns a query that yields no results.
 func (db *DB) NewQuery(queryString string) *Query {
 	if !db.live() {
-		panic(ErrClosedDatabase)
+		return &Query{}
 	}
 	cstr := C.CString(queryString)
 	defer C.free(unsafe.Pointer(cstr))
@@ -231,7 +232,7 @@ func (db *DB) NewQuery(queryString string) *Query {
 // Version returns the database version.
 func (db *DB) Version() int {
 	if !db.live() {
-		panic(ErrClosedDatabase)
+		return 0
 	}
 	return int(C.notmuch_database_get_version(db.toC()))
 }
@@ -239,7 +240,7 @@ func (db *DB) Version() int {
 // LastStatus retrieves last status string for the notmuch database.
 func (db *DB) LastStatus() string {
 	if !db.live() {
-		panic(ErrClosedDatabase)
+		return ""
 	}
 	return C.GoString(C.notmuch_database_status_string(db.toC()))
 }
@@ -247,7 +248,7 @@ func (db *DB) LastStatus() string {
 // Path returns the database path of the database.
 func (db *DB) Path() string {
 	if !db.live() {
-		panic(ErrClosedDatabase)
+		return ""
 	}
 	return C.GoString(C.notmuch_database_get_path(db.toC()))
 }
@@ -259,7 +260,7 @@ func (db *DB) Path() string {
 // Upgrade() to upgrade the database.
 func (db *DB) NeedsUpgrade() bool {
 	if !db.live() {
-		panic(ErrClosedDatabase)
+		return false
 	}
 	cbool := C.notmuch_database_needs_upgrade(db.toC())
 	return int(cbool) != 0
@@ -361,7 +362,7 @@ func (db *DB) Tags() (*Tags, error) {
 	}
 	ctags := C.notmuch_database_get_all_tags(db.toC())
 	if ctags == nil {
-		return nil, ErrUnknownError
+		return nil, ErrOutOfMemory
 	}
 	tags := &Tags{
 		cptr:   unsafe.Pointer(ctags),
@@ -384,7 +385,7 @@ func (db *DB) GetConfigList(prefix string) (*ConfigList, error) {
 
 	ccl := C.notmuch_config_get_pairs(db.toC(), cstr)
 	if ccl == nil {
-		return nil, ErrUnknownError
+		return nil, ErrOutOfMemory
 	}
 	cl := &ConfigList{
 		cptr:   unsafe.Pointer(ccl),

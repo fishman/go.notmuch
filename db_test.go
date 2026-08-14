@@ -300,22 +300,17 @@ func TestConfigListNext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("db.GetConfigList(%q): unexpected error: %s", "", err)
 	}
-	var resKey string
-	var resVal string
 	found := false
-	for cfgList.Next(&resKey, &resVal) {
-		if resKey == cfgKey {
+	for key, value := range cfgList.All() {
+		if key == cfgKey {
 			found = true
-			if resVal != cfgVal {
-				t.Errorf("config value: expected %q, got %q", cfgVal, resVal)
+			if value != cfgVal {
+				t.Errorf("config value: expected %q, got %q", cfgVal, value)
 			}
 		}
 	}
 	if !found {
 		t.Errorf("config key %q not found in config pairs", cfgKey)
-	}
-	if cfgList.Next(&resKey, &resVal) {
-		t.Errorf("iteration did not stop after the end of the options")
 	}
 }
 
@@ -329,10 +324,8 @@ func TestConfigListDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("db.GetConfigList(%q): unexpected error: %s", "new.", err)
 	}
-	var resKey string
-	var resVal string
 	count := 0
-	for cfgList.Next(&resKey, &resVal) {
+	for range cfgList.All() {
 		count++
 	}
 	if count == 0 {

@@ -9,7 +9,10 @@ package notmuch
 // #include <notmuch.h>
 import "C"
 
-import "unsafe"
+import (
+	"iter"
+	"unsafe"
+)
 
 // Threads represents notmuch threads.
 type Threads cStruct
@@ -18,36 +21,44 @@ func (ts *Threads) toC() *C.notmuch_threads_t {
 	return (*C.notmuch_threads_t)(ts.cptr)
 }
 
-func (ts *Threads) Close() error {
-	return (*cStruct)(ts).doClose(func() error {
+func (ts *Threads) Close() {
+	(*cStruct)(ts).doClose(func() error {
 		C.notmuch_threads_destroy(ts.toC())
 		return nil
 	})
 }
 
-// Next retrieves the next thread from the result set. Next returns true if a thread
-// was successfully retrieved.
-func (ts *Threads) Next(t **Thread) bool {
-	if !ts.valid() {
-		return false
+// All iterates over the threads of the result set. Check Err after
+// ranging.
+func (ts *Threads) All() iter.Seq[*Thread] {
+	return func(yield func(*Thread) bool) {
+		if !(*cStruct)(ts).live() {
+			return
+		}
+		for {
+			cthread := C.notmuch_threads_get(ts.toC())
+			if cthread == nil {
+				return
+			}
+			thread := &Thread{
+				cptr:   unsafe.Pointer(cthread),
+				parent: (*cStruct)(ts),
+			}
+			setGcClose(thread)
+			if !yield(thread) {
+				return
+			}
+			C.notmuch_threads_move_to_next(ts.toC())
+		}
 	}
-	*t = ts.get()
-	C.notmuch_threads_move_to_next(ts.toC())
-	return true
 }
 
-func (ts *Threads) get() *Thread {
-	cthread := C.notmuch_threads_get(ts.toC())
-	checkOOM(unsafe.Pointer(cthread))
-	thread := &Thread{
-		cptr:   unsafe.Pointer(cthread),
-		parent: (*cStruct)(ts),
+// Err reports an iteration error, e.g. a Xapian exception. It is nil
+// after a normal end of the result set.
+func (ts *Threads) Err() error {
+	st := C.notmuch_threads_status(ts.toC())
+	if st == C.NOTMUCH_STATUS_ITERATOR_EXHAUSTED {
+		return nil
 	}
-	setGcClose(thread)
-	return thread
-}
-
-func (ts *Threads) valid() bool {
-	cstatus := C.notmuch_threads_status(ts.toC())
-	return int(cstatus) == int(C.NOTMUCH_STATUS_SUCCESS)
+	return statusErr(st)
 }

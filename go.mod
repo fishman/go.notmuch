@@ -1,3 +1,3 @@
 module github.com/zenhack/go.notmuch
 
-go 1.12
+go 1.23

@@ -10,8 +10,6 @@ package notmuch
 import "C"
 import "errors"
 
-import "unsafe"
-
 type status C.notmuch_status_t
 
 var (
@@ -111,15 +109,6 @@ var (
 	// pointer did not come from a thread.
 	ErrNoRepliesOrPointerNotFromThread = errors.New("message has no replies or message's pointer not from a thread")
 )
-
-// Notmuch returns NULL in several instances on out of memory errors. The
-// expected go behavior is to panic. This function checks that if argument is nil
-// and if so, panics with an out-of-memory message.
-func checkOOM(ptr unsafe.Pointer) {
-	if ptr == nil {
-		panic(ErrOutOfMemory)
-	}
-}
 
 // Convert a notmuch status to an error. This is almost a simple cast, but
 // we need to return nil if it's a success, rather than NOTMUCH_STATUS_SUCCESS.

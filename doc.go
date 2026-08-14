@@ -15,8 +15,11 @@
 //     but everything else will be garbage collected when it becomes unreachable,
 //     and not before. Objects hold references to their parent objects to make this
 //     go smoothly.
-//   - If notmuch returns NULL because of an out of memory error, Go will panic, as
-//     it does with other out of memory errors.
+//   - Out of memory errors are returned as ErrOutOfMemory, not panics. Using an
+//     object after its database was closed returns zero values and
+//     ErrClosedDatabase instead of crashing.
+//   - Result sets are iterated with All methods returning iter.Seq; after
+//     ranging, Err reports any iteration error, mirroring database/sql.Rows.
 //   - Some of the names have been shortened or made more idiomatic. The documentation
 //     indends to make it obvious when this is the case.
 //   - Functions which create a child object from a parent object are methods on the

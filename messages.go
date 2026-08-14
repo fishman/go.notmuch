@@ -9,14 +9,15 @@ package notmuch
 // #include <notmuch.h>
 import "C"
 import (
+	"iter"
 	"unsafe"
 )
 
 // Messages represents notmuch messages.
 type Messages cStruct
 
-func (ms *Messages) Close() error {
-	return (*cStruct)(ms).doClose(func() error {
+func (ms *Messages) Close() {
+	(*cStruct)(ms).doClose(func() error {
 		C.notmuch_messages_destroy(ms.toC())
 		return nil
 	})
@@ -26,49 +27,56 @@ func (ms *Messages) toC() *C.notmuch_messages_t {
 	return (*C.notmuch_messages_t)(ms.cptr)
 }
 
-// Next retrieves the next message from the result set. Next returns true if a message
-// was successfully retrieved.
-func (ms *Messages) Next(m **Message) bool {
-	if !ms.valid() {
-		return false
+// All iterates over the messages of the result set. Check Err after
+// ranging.
+func (ms *Messages) All() iter.Seq[*Message] {
+	return func(yield func(*Message) bool) {
+		if !(*cStruct)(ms).live() {
+			return
+		}
+		for {
+			cmessage := C.notmuch_messages_get(ms.toC())
+			if cmessage == nil {
+				return
+			}
+			message := &Message{
+				cptr:   unsafe.Pointer(cmessage),
+				parent: (*cStruct)(ms),
+			}
+			setGcClose(message)
+			if !yield(message) {
+				return
+			}
+			C.notmuch_messages_move_to_next(ms.toC())
+		}
 	}
-	*m = ms.get()
-	C.notmuch_messages_move_to_next(ms.toC())
-	return true
 }
 
-// Tags return a list of tags from all messages.
+// Err reports an iteration error, e.g. a Xapian exception. It is nil
+// after a normal end of the result set.
+func (ms *Messages) Err() error {
+	st := C.notmuch_messages_status(ms.toC())
+	if st == C.NOTMUCH_STATUS_ITERATOR_EXHAUSTED {
+		return nil
+	}
+	return statusErr(st)
+}
+
+// Tags returns a list of tags from all messages.
 //
 // WARNING: You can no longer iterate over messages after calling this
-// function, because the iterator will point at the end of the list.  We do not
+// function, because the iterator will point at the end of the list. We do not
 // have a function to reset the iterator yet and the only way how you can
 // iterate over the list again is to recreate the message list.
 func (ms *Messages) Tags() *Tags {
 	ctags := C.notmuch_messages_collect_tags(ms.toC())
-	// TODO(kalbasit): notmuch_messages_collect_tags can return NULL on error
-	// but there's not explanation on what kind of error can occur. We should handle
-	// it as OOM for now but we eventually have to narrow it down.
-	checkOOM(unsafe.Pointer(ctags))
+	if ctags == nil {
+		return &Tags{}
+	}
 	tags := &Tags{
 		cptr:   unsafe.Pointer(ctags),
 		parent: (*cStruct)(ms),
 	}
 	setGcClose(tags)
 	return tags
-}
-
-func (ms *Messages) get() *Message {
-	cmessage := C.notmuch_messages_get(ms.toC())
-	checkOOM(unsafe.Pointer(cmessage))
-	message := &Message{
-		cptr:   unsafe.Pointer(cmessage),
-		parent: (*cStruct)(ms),
-	}
-	setGcClose(message)
-	return message
-}
-
-func (ms *Messages) valid() bool {
-	cstatus := C.notmuch_messages_status(ms.toC())
-	return int(cstatus) == int(C.NOTMUCH_STATUS_SUCCESS)
 }

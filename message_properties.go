@@ -9,54 +9,37 @@ package notmuch
 // #include <notmuch.h>
 import "C"
 
-// MessageProperties represent a notmuch properties type.
+import "iter"
+
+// MessageProperties represents a notmuch properties iterator.
 type MessageProperties cStruct
 
 func (props *MessageProperties) toC() *C.notmuch_message_properties_t {
 	return (*C.notmuch_message_properties_t)(props.cptr)
 }
 
-func (props *MessageProperties) Close() error {
-	return (*cStruct)(props).doClose(func() error {
+func (props *MessageProperties) Close() {
+	(*cStruct)(props).doClose(func() error {
 		C.notmuch_message_properties_destroy(props.toC())
 		return nil
 	})
 }
 
-// Next retrieves the next prop from the result set. Next returns true if a prop
-// was successfully retrieved.
-func (props *MessageProperties) Next(p **MessageProperty) bool {
-	if !props.valid() {
-		return false
+// All iterates over the properties.
+func (props *MessageProperties) All() iter.Seq[MessageProperty] {
+	return func(yield func(MessageProperty) bool) {
+		if !(*cStruct)(props).live() {
+			return
+		}
+		for C.notmuch_message_properties_valid(props.toC()) != 0 {
+			prop := MessageProperty{
+				Key:   C.GoString(C.notmuch_message_properties_key(props.toC())),
+				Value: C.GoString(C.notmuch_message_properties_value(props.toC())),
+			}
+			if !yield(prop) {
+				return
+			}
+			C.notmuch_message_properties_move_to_next(props.toC())
+		}
 	}
-	*p = props.get()
-	C.notmuch_message_properties_move_to_next(props.toC())
-	return true
-}
-
-// Return a slice of strings containing each element of props.
-func (props *MessageProperties) slice() []string {
-	var prop *MessageProperty
-	ret := []string{}
-	for props.Next(&prop) {
-		ret = append(ret, prop.Value)
-	}
-	return ret
-}
-
-func (props *MessageProperties) get() *MessageProperty {
-	ckey := C.notmuch_message_properties_key(props.toC())
-	cvalue := C.notmuch_message_properties_value(props.toC())
-
-	prop := &MessageProperty{
-		Key:        C.GoString(ckey),
-		Value:      C.GoString(cvalue),
-		properties: props,
-	}
-	return prop
-}
-
-func (props *MessageProperties) valid() bool {
-	cbool := C.notmuch_message_properties_valid(props.toC())
-	return int(cbool) != 0
 }

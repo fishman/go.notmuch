@@ -69,18 +69,14 @@ func TestSmokeConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var k, v string
 	found := false
-	for cfgList.Next(&k, &v) {
-		if k == "new.tags" {
-			found = v == "unread;inbox"
+	for key, value := range cfgList.All() {
+		if key == "new.tags" {
+			found = value == "unread;inbox"
 		}
 	}
 	if !found {
 		t.Error("new.tags not in config pairs")
-	}
-	if cfgList.Next(&k, &v) {
-		t.Error("iteration did not stop at the end")
 	}
 
 	// the key we set shows up
@@ -89,9 +85,9 @@ func TestSmokeConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	found = false
-	for cfgList.Next(&k, &v) {
-		if k == "test.key" {
-			found = v == "value"
+	for key, value := range cfgList.All() {
+		if key == "test.key" {
+			found = value == "value"
 		}
 	}
 	if !found {
@@ -189,8 +185,11 @@ func TestSmokeMatched(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	thread := &Thread{}
-	if !threads.Next(&thread) {
+	var thread *Thread
+	for thread = range threads.All() {
+		break
+	}
+	if thread == nil {
 		t.Fatal("no thread")
 	}
 	if want, got := 2, thread.Count(); want != got {
@@ -199,11 +198,9 @@ func TestSmokeMatched(t *testing.T) {
 	if want, got := 1, thread.CountMatched(); want != got {
 		t.Errorf("matched count: want %d got %d", want, got)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
 	matched := 0
 	total := 0
-	for msgs.Next(&msg) {
+	for msg := range thread.Messages().All() {
 		total++
 		if msg.Matched() {
 			matched++
@@ -241,5 +238,29 @@ func TestSmokeErrClosedDatabase(t *testing.T) {
 	// the C library reports the closed/destroyed database
 	if _, err := db.GetConfig("x"); err == nil {
 		t.Error("GetConfig on closed db: expected error")
+	}
+}
+
+func TestSmokeClosedDatabaseGuards(t *testing.T) {
+	db := smokeNewDB(t, t.TempDir())
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	// every accessor must return a zero value and every operation
+	// ErrClosedDatabase, never panic or crash
+	if got := db.Version(); got != 0 {
+		t.Errorf("Version: want 0, got %d", got)
+	}
+	if got := db.Path(); got != "" {
+		t.Errorf("Path: want empty, got %q", got)
+	}
+	if db.NeedsUpgrade() {
+		t.Error("NeedsUpgrade on closed db")
+	}
+	if _, err := db.NewQuery("").Messages(); err != ErrClosedDatabase {
+		t.Errorf("query on closed db: want ErrClosedDatabase, got %s", err)
+	}
+	if _, err := db.AddMessage("/x"); err != ErrClosedDatabase {
+		t.Errorf("AddMessage: want ErrClosedDatabase, got %s", err)
 	}
 }

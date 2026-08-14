@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+// firstMessage returns the first message of the result set, or nil.
+func firstMessage(msgs *Messages) *Message {
+	for msg := range msgs.All() {
+		return msg
+	}
+	return nil
+}
+
 func TestMessageID(t *testing.T) {
 	db, err := openNoConfig(dbPath, DBReadOnly)
 	if err != nil {
@@ -19,10 +27,9 @@ func TestMessageID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 	if want, got := "20091118002059.067214ed@hikari", msg.ID(); want != got {
 		t.Errorf("msg.ID(): want %s got %s", want, got)
@@ -40,10 +47,9 @@ func TestMessageThreadID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 	if want, got := thread.ID(), msg.ThreadID(); want != got {
 		t.Errorf("msg.ThreadID(): want %s got %s", want, got)
@@ -61,18 +67,17 @@ func TestMessageReplies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 
 	replies, err := msg.Replies()
 	if err != nil {
 		t.Fatalf("msg.Replies(): unexpected error: %s", err)
 	}
-	var count int
-	for replies.Next(&msg) {
+	count := 0
+	for msg = range replies.All() {
 		count++
 
 		// invoke the GC to make sure it's running smoothly.
@@ -101,16 +106,17 @@ func TestMessageFilename(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 
 	var fn string
-	fns := msg.Filenames()
-	if !fns.Next(&fn) {
-		t.Fatalf("msg.Filename: unable to fetch a filename but it's known to have 2")
+	for fn = range msg.Filenames().All() {
+		break
+	}
+	if fn == "" {
+		t.Fatalf("msg.Filenames: unable to fetch a filename but it's known to have 2")
 	}
 	if want, got := path.Join(dbPath, "bar/cur/20:2,"), fn; want != got {
 		t.Errorf("msg.Filename(): want %s got %s", want, got)
@@ -128,16 +134,13 @@ func TestMessageFilenames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 
-	var count int
-	var fn string
-	fns := msg.Filenames()
-	for fns.Next(&fn) {
+	count := 0
+	for range msg.Filenames().All() {
 		count++
 
 		// invoke the GC to make sure it's running smoothly.
@@ -162,10 +165,9 @@ func TestMessageDate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	if !msgs.Next(&msg) {
-		t.Fatalf("msgs.Next(msg): unable to fetch the first message in the thread")
+	msg := firstMessage(thread.Messages())
+	if msg == nil {
+		t.Fatal("unable to fetch the first message in the thread")
 	}
 	if want, got := time.Unix(1258500098, 0), msg.Date(); want.Unix() != got.Unix() {
 		t.Errorf("msg.Date(): want %s got %s", want, got)
@@ -184,8 +186,8 @@ func TestMessageHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	var msg *Message
+	for msg = range msgs.All() {
 		if msg.ID() == "1258471718-6781-2-git-send-email-dottedmag@dottedmag.net" {
 			break
 		}
@@ -212,8 +214,8 @@ func TestMessageTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	var msg *Message
+	for msg = range msgs.All() {
 		if msg.ID() == "1258471718-6781-2-git-send-email-dottedmag@dottedmag.net" {
 			break
 		}
@@ -241,8 +243,8 @@ func TestMessageAddRemoveTagReadonlyDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	var msg *Message
+	for msg = range msgs.All() {
 		if msg.ID() == "1258471718-6781-2-git-send-email-dottedmag@dottedmag.net" {
 			break
 		}
@@ -283,8 +285,8 @@ func TestMessageAddRemoveTag(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	var msg *Message
+	for msg = range msgs.All() {
 		if msg.ID() == "1258471718-6781-2-git-send-email-dottedmag@dottedmag.net" {
 			break
 		}
@@ -350,8 +352,8 @@ func TestMessageAtomic(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	var msg *Message
+	for msg = range msgs.All() {
 		if msg.ID() == "1258471718-6781-2-git-send-email-dottedmag@dottedmag.net" {
 			break
 		}
@@ -405,11 +407,7 @@ func TestMaildirFlagsToTags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
-		break
-	}
+	msg := firstMessage(thread.Messages())
 	err = msg.MaildirFlagsToTags()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -427,11 +425,7 @@ func TestTagsToMaildirFlags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	msgs := thread.Messages()
-	msg := &Message{}
-	for msgs.Next(&msg) {
-		break
-	}
+	msg := firstMessage(thread.Messages())
 	err = msg.TagsToMaildirFlags()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

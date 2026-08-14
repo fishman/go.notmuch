@@ -20,8 +20,12 @@ func (m *Message) toC() *C.notmuch_message_t {
 	return (*C.notmuch_message_t)(m.cptr)
 }
 
-func (m *Message) Close() error {
-	return (*cStruct)(m).doClose(func() error {
+func (m *Message) live() bool {
+	return (*cStruct)(m).live()
+}
+
+func (m *Message) Close() {
+	(*cStruct)(m).doClose(func() error {
 		C.notmuch_message_destroy(m.toC())
 		return nil
 	})
@@ -29,6 +33,9 @@ func (m *Message) Close() error {
 
 // ID returns the message ID.
 func (m *Message) ID() string {
+	if !m.live() {
+		return ""
+	}
 	return C.GoString(C.notmuch_message_get_message_id(m.toC()))
 }
 
@@ -36,6 +43,9 @@ func (m *Message) ID() string {
 // produced it. When a thread is created from a search, some of its
 // messages may not match the original query.
 func (m *Message) Matched() bool {
+	if !m.live() {
+		return false
+	}
 	var cflag C.notmuch_bool_t
 	err := statusErr(C.notmuch_message_get_flag_st(m.toC(), C.NOTMUCH_MESSAGE_FLAG_MATCH, &cflag))
 	if err != nil {
@@ -46,11 +56,17 @@ func (m *Message) Matched() bool {
 
 // ThreadID returns the ID of the thread to which this message belongs to.
 func (m *Message) ThreadID() string {
+	if !m.live() {
+		return ""
+	}
 	return C.GoString(C.notmuch_message_get_thread_id(m.toC()))
 }
 
 // Replies returns the replies of a message.
 func (m *Message) Replies() (*Messages, error) {
+	if !m.live() {
+		return nil, ErrClosedDatabase
+	}
 	cmsgs := C.notmuch_message_get_replies(m.toC())
 	if unsafe.Pointer(cmsgs) == nil {
 		return nil, ErrNoRepliesOrPointerNotFromThread
@@ -72,12 +88,18 @@ func (m *Message) Replies() (*Messages, error) {
 // arbitrarily return a single one of those filenames. See Filenames for
 // returning the complete list of filenames.
 func (m *Message) Filename() string {
+	if !m.live() {
+		return ""
+	}
 	return C.GoString(C.notmuch_message_get_filename(m.toC()))
 }
 
 // Filenames returns *Filenames an iterator to get the message's filenames.
 // Each filename in the iterator is an absolute filename.
 func (m *Message) Filenames() *Filenames {
+	if !m.live() {
+		return &Filenames{}
+	}
 	return &Filenames{
 		cptr:    C.notmuch_message_get_filenames(m.toC()),
 		message: m,
@@ -86,21 +108,30 @@ func (m *Message) Filenames() *Filenames {
 
 // Date returns the date of the message.
 func (m *Message) Date() time.Time {
+	if !m.live() {
+		return time.Time{}
+	}
 	ctime := C.notmuch_message_get_date(m.toC())
 	return time.Unix(int64(ctime), 0)
 }
 
 // Header returns the value of the header.
 func (m *Message) Header(name string) string {
+	if !m.live() {
+		return ""
+	}
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 
 	return C.GoString(C.notmuch_message_get_header(m.toC(), cname))
 }
 
-// Tags returns the tags for the current message, returning a *Tags which can
-// be used to iterate over all tags using `Tags.Next(Tag)`
+// Tags returns the tags for the current message, which can be iterated
+// over with Tags.All().
 func (m *Message) Tags() *Tags {
+	if !m.live() {
+		return &Tags{}
+	}
 	ctags := C.notmuch_message_get_tags(m.toC())
 	tags := &Tags{
 		cptr:   unsafe.Pointer(ctags),
@@ -112,6 +143,9 @@ func (m *Message) Tags() *Tags {
 
 // AddTag adds a tag to the message.
 func (m *Message) AddTag(tag string) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	ctag := C.CString(tag)
 	defer C.free(unsafe.Pointer(ctag))
 	return statusErr(C.notmuch_message_add_tag(m.toC(), ctag))
@@ -119,6 +153,9 @@ func (m *Message) AddTag(tag string) error {
 
 // RemoveTag removes a tag from the message.
 func (m *Message) RemoveTag(tag string) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	ctag := C.CString(tag)
 	defer C.free(unsafe.Pointer(ctag))
 	return statusErr(C.notmuch_message_remove_tag(m.toC(), ctag))
@@ -126,13 +163,18 @@ func (m *Message) RemoveTag(tag string) error {
 
 // RemoveAllTags removes all tags from the message.
 func (m *Message) RemoveAllTags() error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	return statusErr(C.notmuch_message_remove_all_tags(m.toC()))
 }
 
-// Properties returns the properties for the current message, returning a
-// *MessageProperties which can be used to iterate over all properties using
-// `MessageProperties.Next(MessageProperty)`
+// Properties returns the properties for the current message, which can be
+// iterated over with MessageProperties.All().
 func (m *Message) Properties(key string, exact bool) *MessageProperties {
+	if !m.live() {
+		return &MessageProperties{}
+	}
 	cexact := 0
 	if exact {
 		cexact = 1
@@ -150,6 +192,9 @@ func (m *Message) Properties(key string, exact bool) *MessageProperties {
 
 // AddProperty adds a property to the message.
 func (m *Message) AddProperty(key string, value string) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 	cvalue := C.CString(value)
@@ -159,6 +204,9 @@ func (m *Message) AddProperty(key string, value string) error {
 
 // RemoveProperty removes a key/value pair from the message properties.
 func (m *Message) RemoveProperty(key string, value string) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 	cvalue := C.CString(value)
@@ -168,6 +216,9 @@ func (m *Message) RemoveProperty(key string, value string) error {
 
 // RemoveAllProperties removes all properties with key from the message.
 func (m *Message) RemoveAllProperties(key string) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	ckey := C.CString(key)
 	defer C.free(unsafe.Pointer(ckey))
 	return statusErr(C.notmuch_message_remove_all_properties(m.toC(), ckey))
@@ -175,6 +226,9 @@ func (m *Message) RemoveAllProperties(key string) error {
 
 // Atomic allows a transactional change of tags to the message.
 func (m *Message) Atomic(callback func(*Message)) error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	if err := statusErr(C.notmuch_message_freeze(m.toC())); err != nil {
 		return err
 	}
@@ -211,6 +265,9 @@ func (m *Message) Atomic(callback func(*Message)) error {
 // DB.AddMessage. See also Message.TagsToMaildirFlags for synchronizing
 // tag changes back to maildir flags.
 func (m *Message) MaildirFlagsToTags() error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	return statusErr(C.notmuch_message_maildir_flags_to_tags(m.toC()))
 }
 
@@ -244,5 +301,8 @@ func (m *Message) MaildirFlagsToTags() error {
 // tags. See also Message.MaildirFlagsToTags for synchronizing maildir flag
 // changes back to tags.
 func (m *Message) TagsToMaildirFlags() error {
+	if !m.live() {
+		return ErrClosedDatabase
+	}
 	return statusErr(C.notmuch_message_tags_to_maildir_flags(m.toC()))
 }

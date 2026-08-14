@@ -4,16 +4,10 @@ package notmuch
 // Licensed under the GPLv3 or later.
 // See COPYING at the root of the repository for details.
 
-// #cgo LDFLAGS: -lnotmuch
-// #include <stdlib.h>
-// #include <notmuch.h>
-import "C"
-
-// MessageProperty represents a property in the database.
+// MessageProperty represents a key/value pair of a message.
 type MessageProperty struct {
-	Key        string
-	Value      string
-	properties *MessageProperties
+	Key   string
+	Value string
 }
 
 func (p *MessageProperty) String() string {

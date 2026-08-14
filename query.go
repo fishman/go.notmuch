@@ -52,8 +52,12 @@ var (
 	EXCLUDE_ALL ExcludeMode = C.NOTMUCH_EXCLUDE_ALL
 )
 
-func (q *Query) Close() error {
-	return (*cStruct)(q).doClose(func() error {
+func (q *Query) live() bool {
+	return (*cStruct)(q).live()
+}
+
+func (q *Query) Close() {
+	(*cStruct)(q).doClose(func() error {
 		C.notmuch_query_destroy(q.toC())
 		return nil
 	})
@@ -65,11 +69,17 @@ func (q *Query) toC() *C.notmuch_query_t {
 
 // String returns the query as a string, implements fmt.Stringer.
 func (q *Query) String() string {
+	if !q.live() {
+		return ""
+	}
 	return C.GoString(C.notmuch_query_get_query_string(q.toC()))
 }
 
 // Threads returns the threads matching the query.
 func (q *Query) Threads() (*Threads, error) {
+	if !q.live() {
+		return nil, ErrClosedDatabase
+	}
 	var cthreads *C.notmuch_threads_t
 	err := statusErr(C.notmuch_query_search_threads(q.toC(), &cthreads))
 	if err != nil {
@@ -85,6 +95,9 @@ func (q *Query) Threads() (*Threads, error) {
 
 // Messages returns the messages matching the query.
 func (q *Query) Messages() (*Messages, error) {
+	if !q.live() {
+		return nil, ErrClosedDatabase
+	}
 	var cmsgs *C.notmuch_messages_t
 	err := statusErr(C.notmuch_query_search_messages(q.toC(), &cmsgs))
 	if err != nil {
@@ -98,28 +111,44 @@ func (q *Query) Messages() (*Messages, error) {
 	return msgs, nil
 }
 
-// CountThreads returns the number of messages for the current query.
-func (q *Query) CountThreads() int {
+// CountThreads returns the number of threads matching the query.
+func (q *Query) CountThreads() (uint, error) {
+	if !q.live() {
+		return 0, ErrClosedDatabase
+	}
 	var ccount C.uint
-	C.notmuch_query_count_threads(q.toC(), &ccount)
-	return int(ccount)
+	if err := statusErr(C.notmuch_query_count_threads(q.toC(), &ccount)); err != nil {
+		return 0, err
+	}
+	return uint(ccount), nil
 }
 
-// CountMessages returns the number of messages for the current query.
-func (q *Query) CountMessages() int {
+// CountMessages returns the number of messages matching the query.
+func (q *Query) CountMessages() (uint, error) {
+	if !q.live() {
+		return 0, ErrClosedDatabase
+	}
 	var cCount C.uint
-	C.notmuch_query_count_messages(q.toC(), &cCount)
-	return int(cCount)
+	if err := statusErr(C.notmuch_query_count_messages(q.toC(), &cCount)); err != nil {
+		return 0, err
+	}
+	return uint(cCount), nil
 }
 
 // SetSortScheme is used to set the sort scheme on a query.
 func (q *Query) SetSortScheme(mode SortMode) {
+	if !q.live() {
+		return
+	}
 	cmode := C.notmuch_sort_t(mode)
 	C.notmuch_query_set_sort(q.toC(), cmode)
 }
 
 // SetExcludeScheme is used to set the exclude scheme on a query.
 func (q *Query) SetExcludeScheme(mode ExcludeMode) {
+	if !q.live() {
+		return
+	}
 	cmode := C.notmuch_exclude_t(mode)
 	C.notmuch_query_set_omit_excluded(q.toC(), cmode)
 }
@@ -127,6 +156,9 @@ func (q *Query) SetExcludeScheme(mode ExcludeMode) {
 // AddTagExclude adds a tag that will be excluded from the query results by default.
 // Note that this function returns ErrIgnored if the provided tag appears in the query
 func (q *Query) AddTagExclude(tag string) error {
+	if !q.live() {
+		return ErrClosedDatabase
+	}
 	ctag := C.CString(tag)
 	defer C.free(unsafe.Pointer(ctag))
 	return statusErr(C.notmuch_query_add_tag_exclude(q.toC(), ctag))

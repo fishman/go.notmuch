@@ -21,9 +21,8 @@ func TestSearchThreads(t *testing.T) {
 		t.Fatalf("error getting the threads: %s", err)
 	}
 
-	var count int
-	thread := &Thread{}
-	for threads.Next(&thread) {
+	count := 0
+	for range threads.All() {
 		count++
 		// invoke the GC to make sure it's running smoothly.
 		if count%2 == 0 {
@@ -48,9 +47,8 @@ func TestSearchMessages(t *testing.T) {
 		t.Fatalf("error getting the threads: %s", err)
 	}
 
-	var count int
-	msg := &Message{}
-	for msgs.Next(&msg) {
+	count := 0
+	for range msgs.All() {
 		count++
 		// invoke the GC to make sure it's running smoothly.
 		if count%2 == 0 {
@@ -75,9 +73,8 @@ func TestGetNoResult(t *testing.T) {
 		t.Fatalf("error getting the threads: %s", err)
 	}
 
-	var count int
-	thread := &Thread{}
-	for threads.Next(&thread) {
+	count := 0
+	for range threads.All() {
 		count++
 		// invoke the GC to make sure it's running smoothly.
 		if count%2 == 0 {
@@ -98,8 +95,12 @@ func TestQueryCountMessages(t *testing.T) {
 	defer db.Close()
 
 	q := db.NewQuery("subject:\"Introducing myself\"")
-	if want, got := 3, q.CountMessages(); want != got {
-		t.Errorf("q.Count(): want %d got %d", want, got)
+	count, err := q.CountMessages()
+	if err != nil {
+		t.Fatalf("q.CountMessages(): unexpected error: %s", err)
+	}
+	if want, got := uint(3), count; want != got {
+		t.Errorf("q.CountMessages(): want %d got %d", want, got)
 	}
 }
 
@@ -111,8 +112,12 @@ func TestQueryCountThreads(t *testing.T) {
 	defer db.Close()
 
 	q := db.NewQuery("subject:\"Introducing myself\"")
-	if want, got := 1, q.CountThreads(); want != got {
-		t.Errorf("q.Count(): want %d got %d", want, got)
+	count, err := q.CountThreads()
+	if err != nil {
+		t.Fatalf("q.CountThreads(): unexpected error: %s", err)
+	}
+	if want, got := uint(1), count; want != got {
+		t.Errorf("q.CountThreads(): want %d got %d", want, got)
 	}
 }
 

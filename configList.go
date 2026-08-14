@@ -9,12 +9,14 @@ package notmuch
 // #include <notmuch.h>
 import "C"
 
+import "iter"
+
 // ConfigList represents the (key, value) configuration pairs of a database,
 // including those from the configuration file and built-in defaults.
 type ConfigList cStruct
 
-func (cl *ConfigList) Close() error {
-	return (*cStruct)(cl).doClose(func() error {
+func (cl *ConfigList) Close() {
+	(*cStruct)(cl).doClose(func() error {
 		C.notmuch_config_pairs_destroy(cl.toC())
 		return nil
 	})
@@ -24,24 +26,24 @@ func (cl *ConfigList) toC() *C.notmuch_config_pairs_t {
 	return (*C.notmuch_config_pairs_t)(cl.cptr)
 }
 
-// Next retrieves the next config pair from the ConfigList.
-// Neither key, nor value may be nil, or this function will panic.
-// Next returns true if a pair was successfully retrieved.
-func (cl *ConfigList) Next(key, value *string) bool {
-	for cl.valid() {
-		*key = cl.key()
-		*value = cl.value()
-		C.notmuch_config_pairs_move_to_next(cl.toC())
-		if *value != "" {
-			return true
+// All iterates over the config pairs, skipping pairs with empty values.
+func (cl *ConfigList) All() iter.Seq2[string, string] {
+	return func(yield func(string, string) bool) {
+		if !(*cStruct)(cl).live() {
+			return
+		}
+		for C.notmuch_config_pairs_valid(cl.toC()) != 0 {
+			key := cl.key()
+			value := cl.value()
+			C.notmuch_config_pairs_move_to_next(cl.toC())
+			if value == "" {
+				continue
+			}
+			if !yield(key, value) {
+				return
+			}
 		}
 	}
-	return false
-}
-
-func (cl *ConfigList) valid() bool {
-	cbool := C.notmuch_config_pairs_valid(cl.toC())
-	return int(cbool) != 0
 }
 
 func (cl *ConfigList) key() string {

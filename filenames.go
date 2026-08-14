@@ -9,28 +9,25 @@ package notmuch
 // #include <notmuch.h>
 import "C"
 
-// Filenames is an iterator to get the message's filenames.
+import "iter"
+
+// Filenames is an iterator over the message's filenames.
 type Filenames struct {
 	cptr    *C.notmuch_filenames_t
 	message *Message
 }
 
-// Next retrieves the next filename from the iterator. Next returns true if a
-// filename was successfully retrieved.
-func (fs *Filenames) Next(f *string) bool {
-	if !fs.valid() {
-		return false
+// All iterates over the filenames.
+func (fs *Filenames) All() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if fs.cptr == nil {
+			return
+		}
+		for C.notmuch_filenames_valid(fs.cptr) != 0 {
+			if !yield(C.GoString(C.notmuch_filenames_get(fs.cptr))) {
+				return
+			}
+			C.notmuch_filenames_move_to_next(fs.cptr)
+		}
 	}
-	*f = fs.get()
-	C.notmuch_filenames_move_to_next(fs.cptr)
-	return true
-}
-
-func (fs *Filenames) get() string {
-	return C.GoString(C.notmuch_filenames_get(fs.cptr))
-}
-
-func (fs *Filenames) valid() bool {
-	cbool := C.notmuch_filenames_valid(fs.cptr)
-	return int(cbool) != 0
 }

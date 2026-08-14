@@ -56,13 +56,9 @@ func TestSubjectUTF8(t *testing.T) {
 	}
 	defer db.Close()
 
-	threads, err := db.NewQuery("Essai accentué").Threads()
+	thread, err := firstThread(db, "Essai accentué")
 	if err != nil {
-		t.Fatalf("error getting the threads: %s", err)
-	}
-	thread := &Thread{}
-	if !threads.Next(&thread) {
-		t.Fatalf("threads.Next(thread): unable to fetch the first and only thread")
+		t.Fatal(err)
 	}
 	if want, got := "Essai accentué", thread.Subject(); want != got {
 		t.Errorf("db.NewQuery(%q).Threads().Get().Subject(): want %s got %s", want, want, got)
@@ -82,9 +78,8 @@ func TestTopLevelMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.TopLevelMessages()
-	message := &Message{}
-	var count int
-	for msgs.Next(&message) {
+	count := 0
+	for message := range msgs.All() {
 		if want, got := thread.ID(), message.ThreadID(); want != got {
 			t.Errorf("thread.TopLevelMessages()[n]: want %s got %s", want, got)
 		}
@@ -112,9 +107,8 @@ func TestMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 	msgs := thread.Messages()
-	message := &Message{}
-	var count int
-	for msgs.Next(&message) {
+	count := 0
+	for message := range msgs.All() {
 		if want, got := thread.ID(), message.ThreadID(); want != got {
 			t.Errorf("thread.Messages()[n]: want %s got %s", want, got)
 		}
@@ -168,8 +162,8 @@ func TestAuthors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error getting the threads: %s", err)
 		}
-		thread := &Thread{}
-		for i := 0; threads.Next(&thread); i++ {
+		i := 0
+		for thread := range threads.All() {
 			matched, unmatched := thread.Authors()
 			if want, got := ress[i].matched, matched; !reflect.DeepEqual(want, got) {
 				t.Errorf("thread.Authors() matched: want %v got %v", want, got)
@@ -182,6 +176,7 @@ func TestAuthors(t *testing.T) {
 			if i%2 == 0 {
 				runtime.GC()
 			}
+			i++
 		}
 	}
 }
@@ -245,9 +240,8 @@ func firstThread(db *DB, qs string) (*Thread, error) {
 	if err != nil {
 		return nil, err
 	}
-	thread := &Thread{}
-	if !threads.Next(&thread) {
-		return nil, errors.New("threads.Next(thread): unable to fetch the first thread")
+	for thread := range threads.All() {
+		return thread, nil
 	}
-	return thread, nil
+	return nil, errors.New("no thread in the result set")
 }
