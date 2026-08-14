@@ -237,6 +237,19 @@ func (db *DB) Version() int {
 	return int(C.notmuch_database_get_version(db.toC()))
 }
 
+// Revision returns the database revision and its UUID. The revision
+// increments on every message index and tag change; the UUID identifies
+// the database generation and changes on upgrade. Both are used to
+// detect stale handles (notmuch_database_get_revision).
+func (db *DB) Revision() (string, uint64, error) {
+	if !db.live() {
+		return "", 0, ErrClosedDatabase
+	}
+	var uuid *C.char
+	rev := C.notmuch_database_get_revision(db.toC(), &uuid)
+	return C.GoString(uuid), uint64(rev), nil
+}
+
 // LastStatus retrieves last status string for the notmuch database.
 func (db *DB) LastStatus() string {
 	if !db.live() {

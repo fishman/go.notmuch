@@ -214,6 +214,35 @@ func TestSmokeMatched(t *testing.T) {
 	}
 }
 
+func TestSmokeRevision(t *testing.T) {
+	dir := t.TempDir()
+	maildir := filepath.Join(dir, "mail")
+	if err := os.MkdirAll(maildir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	p := smokeWriteMsg(t, maildir, "msg1", "smoke-rev@example.com", "")
+
+	db := smokeNewDB(t, dir)
+	defer db.Close()
+	uuid, rev, err := db.Revision()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if uuid == "" {
+		t.Fatal("empty uuid")
+	}
+	before := rev
+	if _, err := db.AddMessage(p); err != nil {
+		t.Fatal(err)
+	}
+	if _, rev, err = db.Revision(); err != nil {
+		t.Fatal(err)
+	}
+	if rev <= before {
+		t.Errorf("revision did not advance after index: %d -> %d", before, rev)
+	}
+}
+
 func TestSmokeOpenConfigSearch(t *testing.T) {
 	t.Setenv("NOTMUCH_CONFIG", "/nonexistent/config")
 	dir := t.TempDir()
