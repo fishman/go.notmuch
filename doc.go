@@ -1,4 +1,11 @@
-// Package notmuch provides a Go language binding to the notmuch mail library.
+// Package notmuch provides a Go language binding to the notmuch mail library,
+// the fast email search and tagging engine. It wraps the current C API via
+// cgo (open/create with config, index_file, config key/value pairs, database
+// reopen) and manages object lifetimes with the garbage collector, so
+// query results, messages, and tags can never outlive their parents.
+// Errors are returned as typed error values, not raw status codes.
+// Coverage includes tags, search, threads, message properties, maildir flag
+// synchronization, and atomic transactions.
 //
 // The design is similar enough to the underlying C library that familiarity with
 // one will inform the other. There are some differences, however:

@@ -1,6 +1,17 @@
 [![Build Status][ci-img]][ci]
 
-Go binding for [notmuch mail][notmuch].
+Idiomatic Go bindings for [notmuch mail][notmuch], the fast email
+search and tagging engine, via cgo.
+
+- Current C API: `notmuch_database_open_with_config`, `index_file`,
+  config key/value pairs, database reopen
+- GC-managed object lifetimes: call `Close` on the database, the
+  garbage collector handles the rest, so query results, messages,
+  and tags can never outlive their parents
+- Full coverage of tags, search, threads, message properties,
+  maildir flag sync, and atomic transactions
+- Go-idiomatic errors (`ErrNotFound`, `ErrReadOnlyDB`, ...), not raw
+  status codes
 
 Licensed under the GPLv3 or later (like notmuch itself).
 
