@@ -37,6 +37,7 @@ func TestParseMailboxes(t *testing.T) {
 		{"<dan>", nil},                                           // angle addr without @
 		{"a@b.com\r\nsubject: x", nil},                           // header run into body
 		{`'x"a@b.com""'junk'"c@d.com"`, nil},                     // unbalanced quote-run
+		{"a b@c", nil},                                           // space inside the addr
 	}
 	for _, c := range cases {
 		if got := parseMailboxes(c.in); !reflect.DeepEqual(got, c.out) {
@@ -137,6 +138,30 @@ func TestAddressesSender(t *testing.T) {
 	got, err = db.Addresses("tag:nonexistent", AddressOpts{})
 	if err != nil || len(got) != 0 {
 		t.Fatalf("no matches: want 0 entries nil err, got %v %v", got, err)
+	}
+
+	// harvest never panics on a truncated arena - every read is
+	// bounds-checked and errors with ErrMalformedData
+	truncated := [][]byte{
+		{},                                        // missing count header
+		{1, 0, 0, 0},                              // count says 1, no message
+		{1, 0, 0, 0, 1, 0, 0, 0, 9, 0, 0, 0, 'a'}, // header claims 9 bytes, has 1
+	}
+	for _, data := range truncated {
+		buckets := make(map[string]*addrBucket)
+		var order []string
+		if err := harvest(data, buckets, &order); err != ErrMalformedData {
+			t.Errorf("truncated %v: want ErrMalformedData, got %v", data, err)
+		}
+	}
+	ok := []byte{1, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0, 'a', '@', 'b'}
+	buckets := make(map[string]*addrBucket)
+	var order []string
+	if err := harvest(ok, buckets, &order); err != nil {
+		t.Fatalf("valid arena: %v", err)
+	}
+	if len(order) != 1 || buckets[order[0]].addr != "a@b" {
+		t.Fatalf("valid arena: want [a@b], got %v", order)
 	}
 
 	// group + encoded-word names survive the full path
